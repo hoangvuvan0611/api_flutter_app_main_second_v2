@@ -1,0 +1,8 @@
+# Ignored when pushing to dockerhub
+target
+.idea/
+*.iml
+*.iws
+target/
+.sonar/
+.sonarlint/

@@ -1,0 +1,15 @@
+spring:
+  application:
+    name: api_flutter_app_main_second_v1
+  main:
+    banner-mode: off
+
+server:
+  port: 8080
+
+url:
+  tuition: https://daotao.vnua.edu.vn/Default.aspx?page=xemhocphi&id=
+  course: https://daotao.vnua.edu.vn/Default.aspx?page=xemdiemthi&id=
+  schedule: https://daotao.vnua.edu.vn/Default.aspx?page=thoikhoabieu&sta=1&id=
+  test_schedule: https://daotao.vnua.edu.vn/Default.aspx?page=xemlichthi&id=
+  score_semester: https://daotao.vnua.edu.vn/Default.aspx?page=xemdiemthi&id=
