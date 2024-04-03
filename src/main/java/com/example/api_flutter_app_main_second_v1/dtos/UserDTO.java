@@ -18,7 +18,6 @@ public class UserDTO {
     private String specialized;
     private String tuitionFee;
     private String paidTuitionFee;
-    private String outstandingTuitionFee;
     private String gpa;
     private String totalCredit;
     private String currentSemester;

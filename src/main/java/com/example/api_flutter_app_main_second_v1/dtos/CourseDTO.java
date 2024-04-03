@@ -18,7 +18,7 @@ public class CourseDTO {
     private String tuitionFee;
     private String testStartDateTime;
     private String testEndDateTime;
-    private String testAddress;
+    private String testRoom;
     @JsonIgnore
     private UserDTO user;
     private List<MeetingDTO> meetingList;

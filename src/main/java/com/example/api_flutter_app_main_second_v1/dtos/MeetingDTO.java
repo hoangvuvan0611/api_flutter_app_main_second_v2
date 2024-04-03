@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.*;
 
 import java.sql.Date;
+import java.util.List;
 
 @AllArgsConstructor
 @NoArgsConstructor
@@ -12,8 +13,7 @@ import java.sql.Date;
 @Setter
 public class MeetingDTO {
     private String roomName;
-    private String dateTimeStart;
-    private String dateTimeEnd;
+    private List<String> startEndTime;
     @JsonIgnore
     private CourseDTO course;
 }

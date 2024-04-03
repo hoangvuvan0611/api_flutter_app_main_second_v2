@@ -9,7 +9,6 @@ server:
 
 url:
   tuition: https://daotao.vnua.edu.vn/Default.aspx?page=xemhocphi&id=
-  course: https://daotao.vnua.edu.vn/Default.aspx?page=xemdiemthi&id=
   schedule: https://daotao.vnua.edu.vn/Default.aspx?page=thoikhoabieu&sta=1&id=
   test_schedule: https://daotao.vnua.edu.vn/Default.aspx?page=xemlichthi&id=
   score_semester: https://daotao.vnua.edu.vn/Default.aspx?page=xemdiemthi&id=
