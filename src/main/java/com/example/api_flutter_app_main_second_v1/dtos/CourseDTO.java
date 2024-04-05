@@ -13,7 +13,7 @@ import java.util.List;
 public class CourseDTO {
     private String courseId;
     private String courseName;
-    private String group;
+    private String groupCode;
     private String credit;
     private String tuitionFee;
     private String testStartDateTime;

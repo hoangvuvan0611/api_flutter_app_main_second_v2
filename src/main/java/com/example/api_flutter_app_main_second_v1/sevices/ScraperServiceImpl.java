@@ -60,12 +60,12 @@ public class ScraperServiceImpl implements ScraperService{
         String userId = document.getElementById("ctl00_ContentPlaceHolder1_ctl00_lblContentMaSV").text().trim();
 
         String nameAndDateOfBirth = document
-                .getElementById("ctl00_ContentPlaceHolder1_ctl00_lblContentTenSV").text();
+                .getElementById("ctl00_ContentPlaceHolder1_ctl00_lblContentTenSV").text().trim();
         String userName = nameAndDateOfBirth.substring(0, nameAndDateOfBirth.indexOf("-")).trim();
         String dateOfBirth = nameAndDateOfBirth.substring(nameAndDateOfBirth.indexOf(":") + 1).trim();
 
         String classAndDepartmentAndSpecialized = document
-                .getElementById("ctl00_ContentPlaceHolder1_ctl00_lblContentLopSV").text();
+                .getElementById("ctl00_ContentPlaceHolder1_ctl00_lblContentLopSV").text().trim();
         String classOfUser = classAndDepartmentAndSpecialized
                 .substring(0, classAndDepartmentAndSpecialized.indexOf("-")).trim();
         String department = classAndDepartmentAndSpecialized
@@ -76,7 +76,7 @@ public class ScraperServiceImpl implements ScraperService{
 
         String currentSemester = document.getElementById("ctl00_ContentPlaceHolder1_ctl00_ddlChonNHHK")
                 .children().first().text().trim();
-        String dateStartSemester = document.getElementById("ctl00_ContentPlaceHolder1_ctl00_lblNote").text();
+        String dateStartSemester = document.getElementById("ctl00_ContentPlaceHolder1_ctl00_lblNote").text().trim();
         dateStartSemester = dateStartSemester
                 .substring(dateStartSemester.lastIndexOf(")") - 10, dateStartSemester.length() - 1).trim();
 
@@ -102,10 +102,13 @@ public class ScraperServiceImpl implements ScraperService{
                 .getElementById("ctl00_ContentPlaceHolder1_ctl00_lblNHHKOnline").text();
 
         if(currentSemester.equals(currentSemesterTuitionPage)){
-            userDTO.setTuitionFee(
-                    document.getElementById("ctl00_ContentPlaceHolder1_ctl00_lblphaiDong").text());
-            userDTO.setPaidTuitionFee(
-                    document.getElementById("ctl00_ContentPlaceHolder1_ctl00_lblDaDongHKOffline").text());
+            String tuition = document.getElementById("ctl00_ContentPlaceHolder1_ctl00_lblphaiDong").text();
+            tuition = tuition.replaceAll("\\s+", "");
+            userDTO.setTuitionFee(tuition);
+
+            tuition = document.getElementById("ctl00_ContentPlaceHolder1_ctl00_lblDaDongHKOffline").text();
+            tuition = tuition.replaceAll("\\s+", "");
+            userDTO.setPaidTuitionFee(tuition);
         }
 
         // Score page
@@ -150,7 +153,7 @@ public class ScraperServiceImpl implements ScraperService{
             course = CourseDTO.builder()
                     .courseId(elementsTd.get(0).text().trim())
                     .courseName(elementsTd.get(1).text().trim())
-                    .group(elementsTd.get(2).text().trim())
+                    .groupCode(elementsTd.get(2).text().trim())
                     .credit(elementsTd.get(3).text().trim())
                     .build();
 
@@ -238,7 +241,9 @@ public class ScraperServiceImpl implements ScraperService{
                 String courseCode = elementsTd.get(1).text().trim();
                 for(CourseDTO courseDTO : courseList){
                     if(courseCode.equals(courseDTO.getCourseId())){
-                        courseDTO.setTuitionFee(elementsTd.get(7).text());
+                        String tuition = elementsTd.get(7).text().trim();
+                        tuition = tuition.replaceAll("\\s+", "");
+                        courseDTO.setTuitionFee(tuition);
                     }
                 }
             }
@@ -264,29 +269,32 @@ public class ScraperServiceImpl implements ScraperService{
         for(int i=0; i<elementTable.size(); i++){
             if(elementTable.get(i).hasClass("title-hk-diem")){
                 semester = new SemesterDTO();
-                semester.setSemesterName(elementTable.get(i).child(0).text());
+                semester.setSemesterName(elementTable.get(i).child(0).text().trim());
                 List<ScoreDTO> scoreList = new ArrayList<>();
                 for(int j=i+1; j<elementTable.size(); j++){
-                    if(elementTable.get(j).hasClass("row-diem")){
-                        ScoreDTO score = new ScoreDTO();
-                        if(!elementTable.get(j).child(3).text().trim().equals("0")){
-                            score.setScoreName(elementTable.get(j).child(2).text());
-                            score.setCredit(elementTable.get(j).child(3).text());
-                            score.setScore(elementTable.get(j).child(10).text());
-                            score.setGpa(elementTable.get(j).child(12).text());
-                            scoreList.add(score);
-                        }
-                    }else {
-                        String inf = elementTable.get(j).child(0).text();
-                        if(inf.contains("Điểm trung bình học kỳ hệ 4:")){
-                            semester.setGpa(inf.substring(inf.indexOf(":")));
-                        } else if(inf.contains("Số tín chỉ đạt:")){
-                            semester.setTotalCredit(inf.substring(inf.indexOf(":")));
-                        }
-                    }
                     if(elementTable.get(j).hasClass("title-hk-diem")) {
                         i = j-1;
                         break;
+                    } else {
+                        if(elementTable.get(j).hasClass("row-diem")){
+                            ScoreDTO score = new ScoreDTO();
+                            if(!elementTable.get(j).child(3).text().trim().equals("0")){
+                                score.setScoreName(elementTable.get(j).child(2).text().trim());
+                                score.setCredit(elementTable.get(j).child(3).text().trim());
+                                if(elementTable.get(j).child(10).text().trim().length() > 0){
+                                    score.setScore(elementTable.get(j).child(10).text().trim());
+                                    score.setGpa(elementTable.get(j).child(12).text().trim());
+                                }
+                                scoreList.add(score);
+                            }
+                        }else {
+                            String inf = elementTable.get(j).child(0).text();
+                            if(inf.contains("Điểm trung bình học kỳ hệ 4:")){
+                                semester.setGpa(inf.substring(inf.indexOf(":") + 1).trim());
+                            } else if(inf.contains("Số tín chỉ đạt:")){
+                                semester.setTotalCredit(inf.substring(inf.indexOf(":") + 1).trim());
+                            }
+                        }
                     }
                 }
                 semester.setScoreList(scoreList);
@@ -294,8 +302,6 @@ public class ScraperServiceImpl implements ScraperService{
                 semesterList.add(semester);
             }
         }
-
-
         return semesterList;
     }
 
