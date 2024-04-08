@@ -53,7 +53,6 @@ public class ScraperServiceImpl implements ScraperService{
         }
 
         if(document.getElementById("ctl00_ContentPlaceHolder1_ctl00_lblContentMaSV") == null){
-            System.out.println("Server reload");
             return null;
         }
 
