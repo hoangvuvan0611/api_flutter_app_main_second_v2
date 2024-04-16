@@ -150,11 +150,11 @@ public class ScraperServiceImpl implements ScraperService{
         for(Element elementTable: elementsTable){
             Elements elementsTd = elementTable.child(0).child(0).children();
             course = CourseDTO.builder()
-                    .courseId(elementsTd.get(0).text().trim())
-                    .courseName(elementsTd.get(1).text().trim())
-                    .groupCode(elementsTd.get(2).text().trim())
-                    .credit(elementsTd.get(3).text().trim())
-                    .build();
+                .courseId(elementsTd.get(0).text().trim())
+                .courseName(elementsTd.get(1).text().trim())
+                .groupCode(elementsTd.get(2).text().trim())
+                .credit(elementsTd.get(3).text().trim())
+                .build();
 
             List<String> day = List.of(elementsTd.get(8).text().split(" "));
             List<String> startSlot = List.of(elementsTd.get(9).text().split(" "));
@@ -168,20 +168,20 @@ public class ScraperServiceImpl implements ScraperService{
                 List<Byte> listWeek = formatWeek(time.get(i));
                 for (Byte aByte : listWeek) {
                     meeting = MeetingDTO.builder()
-                            .startEndTime(
-                                    dateTimeFormat(
-                                            formatDay(day.get(i)),
-                                            aByte,
-                                            MyDateTime.convertStringToDate(
-                                                    user.getDateStartSemester(),
-                                                    DateTimeConstant.DATE_FORMAT
-                                            ),
-                                            startSlot.get(i),
-                                            sumSlot.get(i)
-                                    )
+                        .startEndTime(
+                            dateTimeFormat(
+                                formatDay(day.get(i)),
+                                aByte,
+                                MyDateTime.convertStringToDate(
+                                    user.getDateStartSemester(),
+                                    DateTimeConstant.DATE_FORMAT
+                                ),
+                                startSlot.get(i),
+                                sumSlot.get(i)
                             )
-                            .roomName(room.get(i))
-                            .build();
+                        )
+                        .roomName(room.get(i))
+                        .build();
                     meeting.setCourse(course);
                     meetingList.add(meeting);
                 }
