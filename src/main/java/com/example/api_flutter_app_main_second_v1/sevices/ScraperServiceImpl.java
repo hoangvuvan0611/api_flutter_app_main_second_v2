@@ -10,7 +10,6 @@ import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import org.springframework.util.RouteMatcher;
 
 import java.io.IOException;
 import java.sql.Time;
@@ -32,37 +31,90 @@ public class ScraperServiceImpl implements ScraperService{
     @Value("${url.score_semester}")
     private String scoreSemesterUrl;
 
+    @Value("${lesson.firstPeriod}")
+    private String firstPeriod;
+    @Value("${lesson.secondPeriod}")
+    private String secondPeriod;
+    @Value("${lesson.thirdPeriod}")
+    private String thirdPeriod;
+    @Value("${lesson.fourthPeriod}")
+    private String fourthPeriod;
+    @Value("${lesson.fifthPeriod}")
+    private String fifthPeriod;
+    @Value("${lesson.sixthPeriod}")
+    private String sixthPeriod;
+    @Value("${lesson.seventhPeriod}")
+    private String seventhPeriod;
+    @Value("${lesson.eighthPeriod}")
+    private String eighthPeriod;
+    @Value("${lesson.ninthPeriod}")
+    private String ninthPeriod;
+    @Value("${lesson.tenthPeriod}")
+    private String tenthPeriod;
+    @Value("${lesson.eleventhPeriod}")
+    private String eleventhPeriod;
+    @Value("${lesson.twelfthPeriod}")
+    private String twelfthPeriod;
+    @Value("${lesson.thirteenthPeriod}")
+    private String thirteenthPeriod;
+
     @Override
     public UserDTO scrappingData(String userCode){
         return scrappingUserTuition(userCode);
     }
-
 
     private UserDTO scrappingUserTuition(String userCode){
         return getDataUser(userCode);
     }
 
     private UserDTO getDataUser(String userCode){
-
         // SchedulePage
         Document document;
         try {
             document = Jsoup.connect(scheduleUrl + userCode).get();
         } catch (IOException e) {
-            throw new RuntimeException("Schedule unService!");
+            throw new RuntimeException(e);
         }
 
         if(document.getElementById("ctl00_ContentPlaceHolder1_ctl00_lblContentMaSV") == null){
             return null;
         }
 
-        String userId = document.getElementById("ctl00_ContentPlaceHolder1_ctl00_lblContentMaSV").text().trim();
+        boolean isStudent = !userCode.matches(".*[a-zA-Z].*");
+        return isStudent?getDataStudent(document):getDataTeacher(document);
+    }
 
+    private UserDTO getDataTeacher(Document document){
+        UserDTO userDTO = new UserDTO();
+        userDTO.setIsStudent("0");
+        // Get teacherId
+        String teacherId = document.getElementById("ctl00_ContentPlaceHolder1_ctl00_lblContentMaSV").text().trim();
+        userDTO.setUserId(teacherId);
+        // Get teacherName
+        String teacherName = document
+                .getElementById("ctl00_ContentPlaceHolder1_ctl00_lblContentTenSV").text().trim();
+        userDTO.setUserName(teacherName);
+
+        String currentSemester = document.getElementById("ctl00_ContentPlaceHolder1_ctl00_ddlChonNHHK")
+                .children().first().text().trim();
+        userDTO.setCurrentSemester(currentSemester);
+        String dateStartSemester = document.getElementById("ctl00_ContentPlaceHolder1_ctl00_lblNote").text().trim();
+        dateStartSemester = dateStartSemester
+                .substring(dateStartSemester.lastIndexOf(")") - 10, dateStartSemester.length() - 1).trim();
+        userDTO.setDateStartSemester(dateStartSemester);
+        userDTO.setCourseList(getDataCourse(userDTO, false));
+        return userDTO;
+    }
+
+    private UserDTO getDataStudent(Document document){
+        // Get userId
+        String userId = document.getElementById("ctl00_ContentPlaceHolder1_ctl00_lblContentMaSV").text().trim();
+        // Get userName
         String nameAndDateOfBirth = document
                 .getElementById("ctl00_ContentPlaceHolder1_ctl00_lblContentTenSV").text().trim();
         String userName = nameAndDateOfBirth.substring(0, nameAndDateOfBirth.indexOf("-")).trim();
-        String dateOfBirth = nameAndDateOfBirth.substring(nameAndDateOfBirth.indexOf(":") + 1).trim();
 
+        String dateOfBirth = nameAndDateOfBirth.substring(nameAndDateOfBirth.indexOf(":") + 1).trim();
         String classAndDepartmentAndSpecialized = document
                 .getElementById("ctl00_ContentPlaceHolder1_ctl00_lblContentLopSV").text().trim();
         String classOfUser = classAndDepartmentAndSpecialized
@@ -88,11 +140,12 @@ public class ScraperServiceImpl implements ScraperService{
                 .specialized(specialized)
                 .currentSemester(currentSemester)
                 .dateStartSemester(dateStartSemester)
+                .isStudent("1")
                 .build();
 
         // Tuition page
         try {
-            document = Jsoup.connect(tuitionUrl + userCode).get();
+            document = Jsoup.connect(tuitionUrl + userDTO.getUserId()).get();
         } catch (IOException e) {
             throw new RuntimeException("Tuition unService!");
         }
@@ -112,7 +165,7 @@ public class ScraperServiceImpl implements ScraperService{
 
         // Score page
         try {
-            document = Jsoup.connect(scoreSemesterUrl + userCode).get();
+            document = Jsoup.connect(scoreSemesterUrl + userDTO.getUserId()).get();
         } catch (IOException e) {
             throw new RuntimeException("Score unService!");
         }
@@ -126,14 +179,14 @@ public class ScraperServiceImpl implements ScraperService{
         userDTO.setTotalCredit(totalCredit);
         userDTO.setGpa(gpa);
 
-        userDTO.setCourseList(getDataCourse(userDTO));
+        userDTO.setCourseList(getDataCourse(userDTO, true));
         userDTO.setSemesterList(getDataSemesterScore(userDTO));
 
         return userDTO;
     }
 
     @SneakyThrows
-    private List<CourseDTO> getDataCourse(UserDTO user){
+    private List<CourseDTO> getDataCourse(UserDTO user, boolean isStudent){
         List<CourseDTO> courseList = new ArrayList<>();
         CourseDTO course;
         // SchedulePage
@@ -146,14 +199,15 @@ public class ScraperServiceImpl implements ScraperService{
 
         Elements elementsTable = document.getElementsByClass("grid-roll2").first().children();
 
-
         for(Element elementTable: elementsTable){
             Elements elementsTd = elementTable.child(0).child(0).children();
+
             course = CourseDTO.builder()
                 .courseId(elementsTd.get(0).text().trim())
                 .courseName(elementsTd.get(1).text().trim())
                 .groupCode(elementsTd.get(2).text().trim())
                 .credit(elementsTd.get(3).text().trim())
+                .classCode(elementsTd.get(4).text().trim())
                 .build();
 
             List<String> day = List.of(elementsTd.get(8).text().split(" "));
@@ -166,12 +220,12 @@ public class ScraperServiceImpl implements ScraperService{
             MeetingDTO meeting;
             for(byte i=0; i<time.size(); i++){
                 List<Byte> listWeek = formatWeek(time.get(i));
-                for (Byte aByte : listWeek) {
+                for (Byte week : listWeek) {
                     meeting = MeetingDTO.builder()
                         .startEndTime(
                             dateTimeFormat(
                                 formatDay(day.get(i)),
-                                aByte,
+                                week,
                                 MyDateTime.convertStringToDate(
                                     user.getDateStartSemester(),
                                     DateTimeConstant.DATE_FORMAT
@@ -180,15 +234,20 @@ public class ScraperServiceImpl implements ScraperService{
                                 sumSlot.get(i)
                             )
                         )
+                        .lesson(startSlot.get(i) + "," + sumSlot.get(i))
                         .roomName(room.get(i))
+                        .course(course)
+                        .week(time.get(i))
+                        .currentWeek(week.toString())
                         .build();
-                    meeting.setCourse(course);
                     meetingList.add(meeting);
                 }
             }
             course.setMeetingList(meetingList);
             courseList.add(course);
         }
+
+        if (!isStudent) return courseList;
 
         try {
             document = Jsoup.connect(testScheduleUrl + user.getUserId()).get();
@@ -198,7 +257,9 @@ public class ScraperServiceImpl implements ScraperService{
 
         String currentSemester = document.getElementById("ctl00_ContentPlaceHolder1_ctl00_dropNHHK")
                 .child(0).text().trim();
-        if(currentSemester.equals(user.getCurrentSemester())){
+
+        /// The student is doing a thesis and has no exam schedule
+        if(currentSemester.equals(user.getCurrentSemester()) && document.getElementById("ctl00_ContentPlaceHolder1_ctl00_gvXem") != null){
             Elements elementsTr = document.getElementById("ctl00_ContentPlaceHolder1_ctl00_gvXem")
                     .child(0).children();
             for(int i=1; i<elementsTr.size(); i++){
@@ -208,15 +269,16 @@ public class ScraperServiceImpl implements ScraperService{
                     if (courseCode.equals(courseDTO.getCourseId())) {
                         courseDTO.setTestRoom(elementsTd.get(9).text().trim());
                         String startTime = elementsTd.get(6).text().trim() + " " +
-                                timeFormat(
-                                        elementsTd.get(7).text().trim(),
-                                        elementsTd.get(8).text().trim()
-                                ).get(0);
+                            timeFormat(
+                                elementsTd.get(7).text().trim(),
+                                elementsTd.get(8).text().trim()
+                            ).get(0);
                         String endTime = elementsTd.get(6).text().trim() + " " +
-                                timeFormat(
-                                        elementsTd.get(7).text().trim(),
-                                        elementsTd.get(8).text().trim()
-                                ).get(1);
+                            timeFormat(
+                                elementsTd.get(7).text().trim(),
+                                elementsTd.get(8).text().trim()
+                            ).get(1);
+                        courseDTO.setLesson(elementsTd.get(7).text().trim() + "," + elementsTd.get(8).text().trim());
                         courseDTO.setTestStartDateTime(startTime);
                         courseDTO.setTestEndDateTime(endTime);
                     }
@@ -264,7 +326,6 @@ public class ScraperServiceImpl implements ScraperService{
 
         Elements elementTable = document.getElementsByClass("view-table").first().child(0).children();
 
-        List<Integer> semesterIndexList = new ArrayList<>();
         for(int i=0; i<elementTable.size(); i++){
             if(elementTable.get(i).hasClass("title-hk-diem")){
                 semester = new SemesterDTO();
@@ -280,7 +341,7 @@ public class ScraperServiceImpl implements ScraperService{
                             if(!elementTable.get(j).child(3).text().trim().equals("0")){
                                 score.setScoreName(elementTable.get(j).child(2).text().trim());
                                 score.setCredit(elementTable.get(j).child(3).text().trim());
-                                if(elementTable.get(j).child(10).text().trim().length() > 0){
+                                if(!elementTable.get(j).child(10).text().trim().isEmpty()){
                                     score.setScore(elementTable.get(j).child(10).text().trim());
                                     score.setGpa(elementTable.get(j).child(12).text().trim());
                                 }
@@ -328,7 +389,7 @@ public class ScraperServiceImpl implements ScraperService{
         };
     }
 
-    private static List<String> dateTimeFormat(Byte day, Byte week, Date timeStartSemeter, String startSlot, String sumSlot){
+    private List<String> dateTimeFormat(Byte day, Byte week, Date timeStartSemeter, String startSlot, String sumSlot){
 
         //Setup startDate of week
         Calendar calendar = Calendar.getInstance();
@@ -339,7 +400,6 @@ public class ScraperServiceImpl implements ScraperService{
 
         calendar.add(Calendar.DAY_OF_WEEK, (week-1)*7);
         calendar.set(Calendar.DAY_OF_WEEK, day);
-
 
         List<Time> timeList = timeFormat(startSlot, sumSlot);
 
@@ -358,31 +418,31 @@ public class ScraperServiceImpl implements ScraperService{
         return dateList;
     }
 
-    private static List<Time> timeFormat(String startSlot, String sumSlot){
+    private List<Time> timeFormat(String startSlot, String sumSlot){
         List<Time> listTime = new ArrayList<>();
 
         new Time(0);
         Time startTime = switch (startSlot) {
-            case "2" -> Time.valueOf("07:55:00");
-            case "3" -> Time.valueOf("08:50:00");
-            case "4" -> Time.valueOf("09:55:00");
-            case "5" -> Time.valueOf("10:50:00");
-            case "6" -> Time.valueOf("12:45:00");
-            case "7" -> Time.valueOf("13:40:00");
-            case "8" -> Time.valueOf("14:35:00");
-            case "9" -> Time.valueOf("15:40:00");
-            case "10" -> Time.valueOf("16:35:00");
-            case "11" -> Time.valueOf("18:00:00");
-            case "12" -> Time.valueOf("18:55:00");
-            case "13" -> Time.valueOf("19:50:00");
-            default -> Time.valueOf("07:00:00");
+            case "2" -> Time.valueOf(secondPeriod);
+            case "3" -> Time.valueOf(thirdPeriod);
+            case "4" -> Time.valueOf(fourthPeriod);
+            case "5" -> Time.valueOf(fifthPeriod);
+            case "6" -> Time.valueOf(sixthPeriod);
+            case "7" -> Time.valueOf(seventhPeriod);
+            case "8" -> Time.valueOf(eighthPeriod);
+            case "9" -> Time.valueOf(ninthPeriod);
+            case "10" -> Time.valueOf(tenthPeriod);
+            case "11" -> Time.valueOf(eleventhPeriod);
+            case "12" -> Time.valueOf(twelfthPeriod);
+            case "13" -> Time.valueOf(thirteenthPeriod);
+            default -> Time.valueOf(firstPeriod);
         };
 
         listTime.add(startTime);
 
         LocalTime localTime = startTime.toLocalTime();
         long smSlot = Long.parseLong(sumSlot);
-        localTime = localTime.plusMinutes(50*smSlot + (smSlot > 3 ? (5*(smSlot-1) + 15) : (5*(smSlot-1))));
+        localTime = localTime.plusMinutes(50*smSlot + (smSlot > 3 ? (5*(smSlot-1) + 10) : (5*(smSlot-1))));
 
         Time endTime = Time.valueOf(localTime);
         listTime.add(endTime);

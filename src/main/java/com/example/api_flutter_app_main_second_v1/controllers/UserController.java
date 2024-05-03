@@ -2,6 +2,7 @@ package com.example.api_flutter_app_main_second_v1.controllers;
 
 import com.example.api_flutter_app_main_second_v1.dtos.UserDTO;
 import com.example.api_flutter_app_main_second_v1.sevices.ScraperService;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -18,7 +19,11 @@ public class UserController {
     }
 
     @GetMapping("/id={id}")
-    public UserDTO setUpData(@PathVariable String id) {
-        return scraperService.scrappingData(id);
+    public ResponseEntity<UserDTO> setUpData(@PathVariable String id) {
+        UserDTO userDTO =  scraperService.scrappingData(id);
+        if(userDTO == null)
+            return ResponseEntity.notFound().build();
+
+        return ResponseEntity.ok(userDTO);
     }
 }

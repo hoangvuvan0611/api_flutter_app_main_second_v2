@@ -22,6 +22,7 @@ public class UserDTO {
     private String totalCredit;
     private String currentSemester;
     private String dateStartSemester;
+    private String isStudent;
     private List<CourseDTO> courseList;
     private List<SemesterDTO> semesterList;
 }

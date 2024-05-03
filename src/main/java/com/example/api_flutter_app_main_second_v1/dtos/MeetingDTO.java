@@ -14,6 +14,9 @@ import java.util.List;
 public class MeetingDTO {
     private String roomName;
     private List<String> startEndTime;
+    private String week;
+    private String currentWeek;
+    private String lesson;
     @JsonIgnore
     private CourseDTO course;
 }

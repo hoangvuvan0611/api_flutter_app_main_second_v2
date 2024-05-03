@@ -12,3 +12,21 @@ url:
   schedule: https://daotao.vnua.edu.vn/Default.aspx?page=thoikhoabieu&sta=1&id=
   test_schedule: https://daotao.vnua.edu.vn/Default.aspx?page=xemlichthi&id=
   score_semester: https://daotao.vnua.edu.vn/Default.aspx?page=xemdiemthi&id=
+  home: https://daotao.vnua.edu.vn/Default.aspx
+  faculty_of_fisheries: https://khoathuysan.vnua.edu.vn
+  university_news_link_all: https://daotao.vnua.edu.vn/default.aspx?page=danhsachthongtin&type=1
+
+lesson:
+  firstPeriod: "07:00:00"
+  secondPeriod: "07:55:00"
+  thirdPeriod: "08:50:00"
+  fourthPeriod: "09:55:00"
+  fifthPeriod: "10:50:00"
+  sixthPeriod: "12:45:00"
+  seventhPeriod: "13:40:00"
+  eighthPeriod: "14:35:00"
+  ninthPeriod: "15:40:00"
+  tenthPeriod: "16:35:00"
+  eleventhPeriod: "18:00:00"
+  twelfthPeriod: "18:55:00"
+  thirteenthPeriod: "19:50:00"
