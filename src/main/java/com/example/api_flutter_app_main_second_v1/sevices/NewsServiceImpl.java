@@ -55,8 +55,9 @@ public class NewsServiceImpl implements NewsService {
 
         for (Element elementTd: elementsTable) {
             if(elementTd.hasClass("TextTitle")) {
-                String title = elementTd.child(0)==null?"":elementTd.child(0).text();
-                String date = elementTd.child(1)==null?"":elementTd.child(1).text();
+                String title = elementTd.child(0)==null?"":elementTd.child(0).text().trim();
+                String date = elementTd.getElementsByClass("NgayTitle")==null
+                    ?"":elementTd.getElementsByClass("NgayTitle").text();
                 String url = elementTd.attr("href")==null?"":elementTd.attr("href");
                 NewsDTO newsDTO = NewsDTO.builder()
                     .title(title)

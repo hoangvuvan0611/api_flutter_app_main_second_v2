@@ -294,7 +294,7 @@ public class ScraperServiceImpl implements ScraperService{
 
         currentSemester = document.getElementById("ctl00_ContentPlaceHolder1_ctl00_lblNHHKOnline").text().trim();
 
-        if(currentSemester.equals(user.getCurrentSemester())){
+        if(currentSemester.equals(user.getCurrentSemester()) && document.getElementById("ctl00_ContentPlaceHolder1_ctl00_gvHocPhi") != null){
             Elements elementsTr = document.getElementById("ctl00_ContentPlaceHolder1_ctl00_gvHocPhi")
                     .child(0).children();
             for(int i=1; i<elementsTr.size(); i++){
