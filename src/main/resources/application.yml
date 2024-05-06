@@ -15,6 +15,7 @@ url:
   home: https://daotao.vnua.edu.vn/Default.aspx
   faculty_of_fisheries: https://khoathuysan.vnua.edu.vn
   university_news_link_all: https://daotao.vnua.edu.vn/default.aspx?page=danhsachthongtin&type=1
+  all_semester: https://daotao.vnua.edu.vn/default.aspx?page=thoikhoabieu&load=all&sta=1&lang=y
 
 lesson:
   firstPeriod: "07:00:00"

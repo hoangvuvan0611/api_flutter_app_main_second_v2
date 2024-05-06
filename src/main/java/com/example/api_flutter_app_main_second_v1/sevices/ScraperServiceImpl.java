@@ -2,8 +2,10 @@ package com.example.api_flutter_app_main_second_v1.sevices;
 
 import com.example.api_flutter_app_main_second_v1.constants.DateTimeConstant;
 import com.example.api_flutter_app_main_second_v1.dtos.*;
+import com.example.api_flutter_app_main_second_v1.requests.SetupDataRequest;
 import com.example.api_flutter_app_main_second_v1.utils.date_time.MyDateTime;
 import lombok.SneakyThrows;
+import org.jsoup.Connection;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -14,10 +16,7 @@ import org.springframework.stereotype.Service;
 import java.io.IOException;
 import java.sql.Time;
 import java.time.LocalTime;
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 
 @Service
 public class ScraperServiceImpl implements ScraperService{
@@ -30,6 +29,8 @@ public class ScraperServiceImpl implements ScraperService{
     private String testScheduleUrl;
     @Value("${url.score_semester}")
     private String scoreSemesterUrl;
+    @Value("${url.all_semester}")
+    private String allSemesterUrl;
 
     @Value("${lesson.firstPeriod}")
     private String firstPeriod;
@@ -59,19 +60,40 @@ public class ScraperServiceImpl implements ScraperService{
     private String thirteenthPeriod;
 
     @Override
-    public UserDTO scrappingData(String userCode){
-        return scrappingUserTuition(userCode);
+    public UserDTO scrappingData(SetupDataRequest request){
+        return scrappingUserTuition(request);
     }
 
-    private UserDTO scrappingUserTuition(String userCode){
-        return getDataUser(userCode);
+    @Override
+    public List<String> getSemesterList() {
+        Document document;
+        try {
+            document = Jsoup.connect(allSemesterUrl).get();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
+        if(document.getElementById("ctl00_ContentPlaceHolder1_ctl00_ddlChonNHHK") == null){
+            return null;
+        }
+
+        Elements elements = document.getElementById("ctl00_ContentPlaceHolder1_ctl00_ddlChonNHHK").children();
+        List<String> semesterList = new ArrayList<>();
+        for (Element element: elements) {
+            semesterList.add(element.text());
+        }
+        return semesterList;
     }
 
-    private UserDTO getDataUser(String userCode){
+    private UserDTO scrappingUserTuition(SetupDataRequest request){
+        return getDataUser(request);
+    }
+
+    private UserDTO getDataUser(SetupDataRequest request){
         // SchedulePage
         Document document;
         try {
-            document = Jsoup.connect(scheduleUrl + userCode).get();
+            document = Jsoup.connect(scheduleUrl + request.getUserId()).get();
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -79,18 +101,28 @@ public class ScraperServiceImpl implements ScraperService{
         if(document.getElementById("ctl00_ContentPlaceHolder1_ctl00_lblContentMaSV") == null){
             return null;
         }
+        
+        // select semester to get user information
+        document = selectSemester(document, scheduleUrl + request.getUserId(), request.getSemester());
 
-        boolean isStudent = !userCode.matches(".*[a-zA-Z].*");
-        return isStudent?getDataStudent(document):getDataTeacher(document);
+        boolean isStudent = !request.getUserId().matches(".*[a-zA-Z].*");
+        UserDTO userDTO = isStudent ? getDataStudent(document, request.getSemester()):getDataTeacher(document, request.getSemester());
+
+        if(request.getUserId().equals("6656485")) {
+            userDTO.setPremium("1");
+        } else {
+            userDTO.setPremium("0");
+        }
+        return userDTO;
     }
 
-    private UserDTO getDataTeacher(Document document){
+    private UserDTO getDataTeacher(Document document, String semester){
+        
+        // Get all information of teacher
         UserDTO userDTO = new UserDTO();
         userDTO.setIsStudent("0");
-        // Get teacherId
         String teacherId = document.getElementById("ctl00_ContentPlaceHolder1_ctl00_lblContentMaSV").text().trim();
         userDTO.setUserId(teacherId);
-        // Get teacherName
         String teacherName = document
                 .getElementById("ctl00_ContentPlaceHolder1_ctl00_lblContentTenSV").text().trim();
         userDTO.setUserName(teacherName);
@@ -102,18 +134,17 @@ public class ScraperServiceImpl implements ScraperService{
         dateStartSemester = dateStartSemester
                 .substring(dateStartSemester.lastIndexOf(")") - 10, dateStartSemester.length() - 1).trim();
         userDTO.setDateStartSemester(dateStartSemester);
-        userDTO.setCourseList(getDataCourse(userDTO, false));
+        // to get all data course(test, meeting)
+        userDTO.setCourseList(getDataCourse(userDTO, false, semester));
         return userDTO;
     }
 
-    private UserDTO getDataStudent(Document document){
-        // Get userId
+    private UserDTO getDataStudent(Document document, String semester){
+        //Get information of student
         String userId = document.getElementById("ctl00_ContentPlaceHolder1_ctl00_lblContentMaSV").text().trim();
-        // Get userName
         String nameAndDateOfBirth = document
                 .getElementById("ctl00_ContentPlaceHolder1_ctl00_lblContentTenSV").text().trim();
         String userName = nameAndDateOfBirth.substring(0, nameAndDateOfBirth.indexOf("-")).trim();
-
         String dateOfBirth = nameAndDateOfBirth.substring(nameAndDateOfBirth.indexOf(":") + 1).trim();
         String classAndDepartmentAndSpecialized = document
                 .getElementById("ctl00_ContentPlaceHolder1_ctl00_lblContentLopSV").text().trim();
@@ -125,8 +156,6 @@ public class ScraperServiceImpl implements ScraperService{
                 .substring(classAndDepartmentAndSpecialized.indexOf(":") + 1,
                         classAndDepartmentAndSpecialized.lastIndexOf("-")).trim();
 
-        String currentSemester = document.getElementById("ctl00_ContentPlaceHolder1_ctl00_ddlChonNHHK")
-                .children().first().text().trim();
         String dateStartSemester = document.getElementById("ctl00_ContentPlaceHolder1_ctl00_lblNote").text().trim();
         dateStartSemester = dateStartSemester
                 .substring(dateStartSemester.lastIndexOf(")") - 10, dateStartSemester.length() - 1).trim();
@@ -138,32 +167,61 @@ public class ScraperServiceImpl implements ScraperService{
                 .classOfUser(classOfUser)
                 .department(department)
                 .specialized(specialized)
-                .currentSemester(currentSemester)
+                .currentSemester(semester)
                 .dateStartSemester(dateStartSemester)
                 .isStudent("1")
                 .build();
 
-        // Tuition page
+        /*Tuition page, get tuition data of student*/
         try {
             document = Jsoup.connect(tuitionUrl + userDTO.getUserId()).get();
         } catch (IOException e) {
             throw new RuntimeException("Tuition unService!");
         }
 
-        String currentSemesterTuitionPage = document
-                .getElementById("ctl00_ContentPlaceHolder1_ctl00_lblNHHKOnline").text();
+//        String currentSemesterTuitionPage = document
+//                .getElementById("ctl00_ContentPlaceHolder1_ctl00_lblNHHKOnline").text();
+//
+//        if(semester.equals(currentSemesterTuitionPage)){
+//            String tuition = document.getElementById("ctl00_ContentPlaceHolder1_ctl00_lblphaiDong").text();
+//            tuition = tuition.replaceAll("\\s+", "");
+//            userDTO.setTuitionFee(tuition);
+//
+//            tuition = document.getElementById("ctl00_ContentPlaceHolder1_ctl00_lblDaDongHKOffline").text();
+//            tuition = tuition.replaceAll("\\s+", "");
+//            userDTO.setPaidTuitionFee(tuition);
+//        }
 
-        if(currentSemester.equals(currentSemesterTuitionPage)){
-            String tuition = document.getElementById("ctl00_ContentPlaceHolder1_ctl00_lblphaiDong").text();
-            tuition = tuition.replaceAll("\\s+", "");
-            userDTO.setTuitionFee(tuition);
+        Elements elementsTuition = document.getElementById("ctl00_ContentPlaceHolder1_ctl00_pnlTongKetHocPhiCacHocKy")
+                .firstElementChild().firstElementChild().children();
 
-            tuition = document.getElementById("ctl00_ContentPlaceHolder1_ctl00_lblDaDongHKOffline").text();
-            tuition = tuition.replaceAll("\\s+", "");
-            userDTO.setPaidTuitionFee(tuition);
+        for(int i=0; i<elementsTuition.size(); i++) {
+            if(elementsTuition.get(i).text().trim().contains(semester)) {
+                System.out.println(semester);
+                // Data tuitionFee current semester
+                if(elementsTuition.get(i + 1) != null) {
+                    String tuition = elementsTuition.get(i + 1).text();
+                    tuition = tuition.substring(tuition.indexOf(":") + 1).replaceAll("\\s+", "");
+                    userDTO.setTuitionFee(tuition);
+                }
+                // get data OldSemesterTuitionDebt
+                if(elementsTuition.get(i + 2) != null) {
+                    String tuition = elementsTuition.get(i + 2).text();
+                    tuition = tuition.substring(tuition.indexOf(":") + 1).replaceAll("\\s+", "");
+                    userDTO.setOldSemesterTuitionDebt(tuition);
+                }
+                // get data PaidTuitionFee
+                if(elementsTuition.get(i + 3) != null) {
+                    String tuition = elementsTuition.get(i + 3).firstElementChild().text();
+                    tuition = tuition.substring(tuition.indexOf(":") + 1).replaceAll("\\s+", "");
+                    userDTO.setPaidTuitionFee(tuition);
+                }
+                break;
+            }
         }
 
-        // Score page
+
+        /* Score page, get score data of student */
         try {
             document = Jsoup.connect(scoreSemesterUrl + userDTO.getUserId()).get();
         } catch (IOException e) {
@@ -179,23 +237,27 @@ public class ScraperServiceImpl implements ScraperService{
         userDTO.setTotalCredit(totalCredit);
         userDTO.setGpa(gpa);
 
-        userDTO.setCourseList(getDataCourse(userDTO, true));
+        userDTO.setCourseList(getDataCourse(userDTO, true, semester));
         userDTO.setSemesterList(getDataSemesterScore(userDTO));
 
         return userDTO;
     }
 
     @SneakyThrows
-    private List<CourseDTO> getDataCourse(UserDTO user, boolean isStudent){
+    private List<CourseDTO> getDataCourse(UserDTO user, boolean isStudent, String semester){
         List<CourseDTO> courseList = new ArrayList<>();
         CourseDTO course;
-        // SchedulePage
+
+        // Schedule Page, get all data meeting
         Document document;
         try {
             document = Jsoup.connect(scheduleUrl + user.getUserId()).get();
         } catch (IOException e) {
             throw new RuntimeException("Schedule unService!");
         }
+
+        /// choose semester in dao tao page to read data meeting
+        document = selectSemester(document, scheduleUrl + user.getUserId(), semester);
 
         Elements elementsTable = document.getElementsByClass("grid-roll2").first().children();
 
@@ -247,6 +309,7 @@ public class ScraperServiceImpl implements ScraperService{
             courseList.add(course);
         }
 
+        // if is not student stop scrap TestSchedule data
         if (!isStudent) return courseList;
 
         try {
@@ -349,10 +412,11 @@ public class ScraperServiceImpl implements ScraperService{
                             }
                         }else {
                             String inf = elementTable.get(j).child(0).text();
+                            String gpaOfTotalCredit = inf.substring(inf.indexOf(":") + 1).trim();
                             if(inf.contains("Điểm trung bình học kỳ hệ 4:")){
-                                semester.setGpa(inf.substring(inf.indexOf(":") + 1).trim());
+                                semester.setGpa(gpaOfTotalCredit);
                             } else if(inf.contains("Số tín chỉ đạt:")){
-                                semester.setTotalCredit(inf.substring(inf.indexOf(":") + 1).trim());
+                                semester.setTotalCredit(gpaOfTotalCredit);
                             }
                         }
                     }
@@ -364,6 +428,42 @@ public class ScraperServiceImpl implements ScraperService{
         }
         return semesterList;
     }
+
+    @SneakyThrows
+    Document selectSemester(Document document,String url, String semester) {
+        Element elementDropdownSelectSemester = document.getElementById("ctl00_ContentPlaceHolder1_ctl00_ddlChonNHHK");
+        if(elementDropdownSelectSemester == null) {
+            return null;
+        }
+        // generate GET request __VIEWSTATE and __VIEWSTATEGENERATOR
+        Connection.Response response = Jsoup.connect(url)
+                .method(Connection.Method.GET)
+                .execute();
+        Map<String, String> cookies = response.cookies();
+        Document documentCookies = response.parse();
+        String viewState = documentCookies.select("input[name=__VIEWSTATE]").attr("value");
+        String viewStateGenerator = documentCookies.select("input[name=__VIEWSTATEGENERATOR]").attr("value");
+
+        String valueOfSelect = "";
+        //get option list semester
+        Elements options = elementDropdownSelectSemester.select("option");
+        for(Element option: options) {
+            if(option.text().trim().equals(semester.trim())) {
+                valueOfSelect = option.attr("value");
+            }
+        }
+
+        // Select the semester again to get data
+        return Jsoup.connect(url)
+                .timeout(30000)
+                .cookies(cookies)
+                .data("__VIEWSTATE", viewState)
+                .data("__VIEWSTATEGENERATOR", viewStateGenerator)
+                .data("ctl00$ContentPlaceHolder1$ctl00$ddlChonNHHK", valueOfSelect)
+                .post();
+
+    }
+
 
     private List<Byte> formatWeek(String num){
         List<Byte> integerList = new ArrayList<>();

@@ -18,11 +18,13 @@ public class UserDTO {
     private String specialized;
     private String tuitionFee;
     private String paidTuitionFee;
+    private String oldSemesterTuitionDebt;
     private String gpa;
     private String totalCredit;
     private String currentSemester;
     private String dateStartSemester;
     private String isStudent;
+    private String premium;
     private List<CourseDTO> courseList;
     private List<SemesterDTO> semesterList;
 }
