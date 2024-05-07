@@ -14,7 +14,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Service
-public class NewsServiceImpl implements NewsService {
+public class ScraperNewsServiceImpl implements ScraperNewsService {
 
     @Value("${url.home}")
     private String homeUrl;

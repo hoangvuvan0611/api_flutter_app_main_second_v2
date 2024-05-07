@@ -19,7 +19,7 @@ import java.time.LocalTime;
 import java.util.*;
 
 @Service
-public class ScraperServiceImpl implements ScraperService{
+public class ScraperDataServiceImpl implements ScraperDataService {
 
     @Value("${url.tuition}")
     private String tuitionUrl;
@@ -61,7 +61,7 @@ public class ScraperServiceImpl implements ScraperService{
 
     @Override
     public UserDTO scrappingData(SetupDataRequest request){
-        return scrappingUserTuition(request);
+        return getDataUser(request);
     }
 
     @Override
@@ -83,10 +83,6 @@ public class ScraperServiceImpl implements ScraperService{
             semesterList.add(element.text());
         }
         return semesterList;
-    }
-
-    private UserDTO scrappingUserTuition(SetupDataRequest request){
-        return getDataUser(request);
     }
 
     private UserDTO getDataUser(SetupDataRequest request){
@@ -455,12 +451,12 @@ public class ScraperServiceImpl implements ScraperService{
 
         // Select the semester again to get data
         return Jsoup.connect(url)
-                .timeout(30000)
-                .cookies(cookies)
-                .data("__VIEWSTATE", viewState)
-                .data("__VIEWSTATEGENERATOR", viewStateGenerator)
-                .data("ctl00$ContentPlaceHolder1$ctl00$ddlChonNHHK", valueOfSelect)
-                .post();
+            .timeout(30000)
+            .cookies(cookies)
+            .data("__VIEWSTATE", viewState)
+            .data("__VIEWSTATEGENERATOR", viewStateGenerator)
+            .data("ctl00$ContentPlaceHolder1$ctl00$ddlChonNHHK", valueOfSelect)
+            .post();
 
     }
 

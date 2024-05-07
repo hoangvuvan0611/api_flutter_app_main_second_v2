@@ -2,7 +2,7 @@ package com.example.api_flutter_app_main_second_v1.controllers;
 
 import com.example.api_flutter_app_main_second_v1.dtos.UserDTO;
 import com.example.api_flutter_app_main_second_v1.requests.SetupDataRequest;
-import com.example.api_flutter_app_main_second_v1.sevices.ScraperService;
+import com.example.api_flutter_app_main_second_v1.sevices.ScraperDataService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -12,15 +12,15 @@ import java.util.List;
 @RequestMapping(value = "/api/v1/user")
 public class UserController {
 
-    final ScraperService scraperService;
+    final ScraperDataService scraperDataService;
 
-    public UserController(ScraperService scraperService) {
-        this.scraperService = scraperService;
+    public UserController(ScraperDataService scraperDataService) {
+        this.scraperDataService = scraperDataService;
     }
 
     @PostMapping("/setupData")
     public ResponseEntity<UserDTO> setUpData(@RequestBody SetupDataRequest request) {
-        UserDTO userDTO =  scraperService.scrappingData(request);
+        UserDTO userDTO =  scraperDataService.scrappingData(request);
         if(userDTO == null)
             return ResponseEntity.notFound().build();
 
@@ -29,6 +29,6 @@ public class UserController {
 
     @GetMapping("/semester")
     public List<String> getAllSemester() {
-        return scraperService.getSemesterList();
+        return scraperDataService.getSemesterList();
     }
 }
