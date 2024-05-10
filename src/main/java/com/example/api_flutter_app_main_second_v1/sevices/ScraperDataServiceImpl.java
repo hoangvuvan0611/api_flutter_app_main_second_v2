@@ -123,9 +123,7 @@ public class ScraperDataServiceImpl implements ScraperDataService {
                 .getElementById("ctl00_ContentPlaceHolder1_ctl00_lblContentTenSV").text().trim();
         userDTO.setUserName(teacherName);
 
-        String currentSemester = document.getElementById("ctl00_ContentPlaceHolder1_ctl00_ddlChonNHHK")
-                .children().first().text().trim();
-        userDTO.setCurrentSemester(currentSemester);
+        userDTO.setCurrentSemester(semester);
         String dateStartSemester = document.getElementById("ctl00_ContentPlaceHolder1_ctl00_lblNote").text().trim();
         dateStartSemester = dateStartSemester
                 .substring(dateStartSemester.lastIndexOf(")") - 10, dateStartSemester.length() - 1).trim();
@@ -193,7 +191,6 @@ public class ScraperDataServiceImpl implements ScraperDataService {
 
         for(int i=0; i<elementsTuition.size(); i++) {
             if(elementsTuition.get(i).text().trim().contains(semester)) {
-                System.out.println(semester);
                 // Data tuitionFee current semester
                 if(elementsTuition.get(i + 1) != null) {
                     String tuition = elementsTuition.get(i + 1).text();
